@@ -1,0 +1,54 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/README.md b/README.md
+index 6657d343f87eb801ca8d8c8bed5a954c05d47730..569f440bd9a930fb665aa7e5ee37bb81aa39d23c 100644
+--- a/README.md
++++ b/README.md
+@@ -1 +1,43 @@
+-# burnex-cop
+\ No newline at end of file
++# burnex-cop
++
++## Storymap build (completed command)
++
++Use this to generate `/home/claude/storymap_refined.html` and correctly inject the base64-encoded gzip GeoJSON into `GEO_B64`.
++
++```bash
++GEO_DATA=$(cat /home/claude/geo_b64.txt)
++
++cat > /home/claude/storymap_refined.html <<'HTMLEOF'
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8">
++  <meta name="viewport" content="width=device-width,initial-scale=1">
++  <title>QoL Speed Exposure — Sacramento County</title>
++</head>
++<body>
++  <!-- your full HTML content here -->
++  <script>
++    const GEO_B64 = "PLACEHOLDER_GEO";
++  </script>
++</body>
++</html>
++HTMLEOF
++
++python3 - <<'PY'
++from pathlib import Path
++import os
++
++html_path = Path('/home/claude/storymap_refined.html')
++geo_data = os.environ['GEO_DATA']
++text = html_path.read_text(encoding='utf-8')
++text = text.replace('PLACEHOLDER_GEO', geo_data)
++html_path.write_text(text, encoding='utf-8')
++print(f"Done — {html_path.stat().st_size} bytes with GEO_B64 embedded")
++PY
++```
++
++### Why this works
++- Keeps heredoc quoted (`<<'HTMLEOF'`) so your HTML/JS stays literal.
++- Avoids shell escaping issues for very large base64 by replacing the placeholder after writing.
++- Ensures `const GEO_B64` is actually populated before opening the page.
+ 
+EOF
+)
